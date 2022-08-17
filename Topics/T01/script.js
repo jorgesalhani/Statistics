@@ -1,4 +1,4 @@
-function getFairDiceFrequencyDistribution(N) {
+function getFairDiceOccurrences(N) {
   let diceFrequecyDistribution = [];
   let r = 0;
   for (let i = 0; i < N; i++) {
@@ -9,47 +9,48 @@ function getFairDiceFrequencyDistribution(N) {
 }
 
 function fairDiceHistogram() {
-  var margin = {top: 10, right: 30, bottom: 30, left: 40},
-    width = 460 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+  let margin = {top: 10, right: 30, bottom: 30, left: 40};
+  let width = 460 - margin.left - margin.right;
+  let height = 400 - margin.top - margin.bottom;
   
   let svgElement = document.createElement('div');
   svgElement.classList.add('data-viz')
   let t01Element = document.querySelector('.T01');
   t01Element.appendChild(svgElement);
-var svg = d3.select(".data-viz")
-  .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
 
-// get the data
-let data = getFairDiceFrequencyDistribution(100);
-  // X axis: scale and draw:
-  var x = d3.scaleLinear()
-      .domain([1, 7])     // can use this instead of 1000 to have the max of data: d3.max(data, function(d) { return +d.price })
-      .range([1, width]);
+  let svg = d3.select(".data-viz")
+    .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  let nSample = 10;
+  let data = getFairDiceOccurrences(nSample);
+  let x = d3.scaleLinear()
+    .domain([1, 7])     
+    .range([1, width]);
+  
   svg.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
 
-  // set the parameters for the histogram
-  var histogram = d3.histogram()
-      .value(function(d) { 
+  console.log(x.domain());
+  let histogram = d3.histogram()
+      .value(function(d) {
         return d; 
-      })   // I need to give the vector of value
-      .domain(x.domain())  // then the domain of the graphic
-      .thresholds(x.ticks(7)); // then the numbers of bins
+      })
+      .domain(x.domain())
+      .thresholds(x.ticks(6));
 
-  // And apply this function to data to get the bins
-  var bins = histogram(data);
+  let bins = histogram(data);
 
-  // Y axis: scale and draw:
-  var y = d3.scaleLinear()
-      .range([height, 0]);
-      y.domain([0, d3.max(bins, function(d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+  let y = d3.scaleLinear()
+    .range([height, 0])
+    .domain([0, d3.max(bins, function(d) { 
+      return d.length / nSample; 
+    })]);
+    
   svg.append("g")
       .call(d3.axisLeft(y));
 
@@ -61,13 +62,15 @@ let data = getFairDiceFrequencyDistribution(100);
       .append("rect")
         .attr("x", 1)
         .attr("transform", function(d) { 
-          return "translate(" + x(d.x0) + "," + y(d.length) + ")"; 
+          return "translate(" + x(d.x0) + "," + y(d.length / nSample) + ")"; 
         })
         .attr("width", function(d) { 
           return x(d.x1) - x(d.x0)- 1;
         })
         .attr("height", function(d) { 
-          return height - y(d.length); 
+          // console.log(d.length, '--');
+          console.log(x(d.x0));
+          return height - y(d.length / nSample); 
         })
         .style("fill", "#69b3a2");
 
