@@ -8,6 +8,18 @@ function getFairDiceOccurrences(N) {
   return diceFrequecyDistribution;
 }
 
+function getFairDiceExpectedValue(data) {
+  let expectedValue = 0;
+  let expectedValues = []
+  let iTrial = 1;
+  data.forEach(element => {
+    expectedValue += (element);
+    expectedValues.push(expectedValue / iTrial);
+    iTrial++;
+  });
+  return expectedValues;
+}
+
 function expectedValuePlot(data) {
   let margin = {top: 10, right: 30, bottom: 50, left: 60};
   let width = 460 - margin.left - margin.right;
@@ -26,21 +38,63 @@ function expectedValuePlot(data) {
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  let nSample = 10;
-  let x = d3.scaleLinear()
-    .domain([1, 7])     
+  let expectedValues = getFairDiceExpectedValue(data);
+
+  let xScale = d3.scaleLinear()
+    .domain([0, data.length + 3])     
     .range([1, width]);
+
+  let yScale = d3.scaleLinear()
+    .domain([0, d3.max(expectedValues) + 1])     
+    .range([height, 0]);
+
+  let line = d3.line()
+    .x((d, i) => {
+      return xScale(i);
+    })
+    .y((d) => {
+      // console.log(d)
+      return yScale(d);
+    })
+    .curve(d3.curveLinear);
   
   svg.append("g")
     .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x));
+    .call(d3.axisBottom(xScale));
+    
+  svg.append("g")
+    .call(d3.axisLeft(yScale));
 
-  svg.append("text")             
+  svg.append('g')
+    .selectAll("dot")
+    .data(expectedValues)
+    .enter()
+    .append("circle")
+    .attr("cx", function (d, i) { 
+      return xScale(i); 
+    })
+    .attr("cy", function (d) { 
+      return yScale(d); 
+    })
+    .attr("r", 2)
+    // .attr("transform", "translate(" + 0 + "," + height + ")")
+    .style("fill", "#CC0000");
+
+  svg.append("path")
+    .datum(expectedValues) 
+    .attr("class", "line") 
+    // .attr("transform", "translate(" + 0 + "," + height + ")")
+    .attr("d", line)
+    .style("fill", "none")
+    .style("stroke", "#CC0000")
+    .style("stroke-width", "2");
+
+    svg.append("text")             
     .attr("transform",
           "translate(" + (width/2) + " ," + 
                           (height + margin.top + 30) + ")")
     .style("text-anchor", "middle")
-    .text("Face i");
+    .text("Número de tentativas (N)");
   
   svg.append("text")
     .attr("transform", "rotate(-90)")
@@ -48,46 +102,9 @@ function expectedValuePlot(data) {
     .attr("x",0 - (height / 2))
     .attr("dy", "1em")
     .style("text-anchor", "middle")
-    .text("Frequência (%)"); 
+    .text("Valor Esperado E[X]"); 
 
-  // console.log(x.domain());
-  let histogram = d3.histogram()
-      .value(function(d) {
-        return d; 
-      })
-      .domain(x.domain())
-      .thresholds(x.ticks(6));
-
-  let bins = histogram(data);
-
-  let y = d3.scaleLinear()
-    .range([height, 0])
-    .domain([0, d3.max(bins, function(d) { 
-      return (d.length / nSample + 0.1); 
-    })]);
-    
-  svg.append("g")
-      .call(d3.axisLeft(y));
-
-  // append the bar rectangles to the svg element
-  bins.pop()
-  svg.selectAll("rect")
-      .data(bins)
-      .enter()
-      .append("rect")
-        .attr("x", 1)
-        .attr("transform", function(d) { 
-          return "translate(" + x(d.x0) + "," + y(d.length / nSample) + ")"; 
-        })
-        .attr("width", function(d) { 
-          return x(d.x1) - x(d.x0)- 1;
-        })
-        .attr("height", function(d) { 
-          // console.log(d.length, '--');
-          // console.log(x(d.x0));
-          return height - y(d.length / nSample); 
-        })
-        .style("fill", "#69b3a2");
+  console.log();
 }
 
 function fairDiceHistogram() {
@@ -114,7 +131,7 @@ function fairDiceHistogram() {
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  let nSample = 10;
+  let nSample = 1000;
   let data = getFairDiceOccurrences(nSample);
   let x = d3.scaleLinear()
     .domain([1, 7])     
